@@ -1,63 +1,67 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const PORT = process.env.PORT || 3000;
 
 const server = http.createServer((req, res)=>{
     let filePath = path.join(__dirname, 'public', (req.url === '/') ? 'index.html': req.url);
-    let contentType = 'text/html';
+    const contentType = getContentType(filePath);
 
     if (!path.extname(filePath)) {
         filePath += '.html';
     }
 
-    switch(path.extname(filePath)) {
-        case '.css': 
-            contentType = 'text/css';
-            break;
-        case '.js':
-            contentType = 'text/javascript';
-            break;
-        case '.jpg':
-        case '.jpeg':
-            contentType = 'jpg';
-            break;
-        case '.png':
-            contentType = 'png';
-            break;
-        case '.ico':
-            contentType = 'ico';
-            break;
-        default:
-            contentType = 'text/html';
-            break;
-    }
-
     fs.readFile(filePath, (error, content)=>{
         if (error) {
-           const errorFilePath = path.join(__dirname, 'public', 'error.html');
-
-           fs.readFile(errorFilePath, 'utf-8', (error, data)=>{
-                if (error) {
-                    res.writeHead(500);
-                    res.end("Server error");
-                }
-                else {
-                    res.writeHead(200);
-                    res.end(data);
-                }  
-           })
+           showErrorPage(res);
         }
         else {
-            res.writeHead(200, {
-                'Content-Type': contentType
-            })
-    
-            res.end(content);
+           showContentPage(content, contentType, res);
         }
     });
-
 });
 
-server.listen(3000, ()=>{
-    console.log("Server has been started...");
+function getContentType(file){
+    switch(path.extname(file)) {
+        case '.css': 
+            return 'text/css';
+        case '.js':
+            return 'text/javascript';
+        case '.jpg':
+        case '.jpeg':
+            return 'jpg';
+        case '.png':
+            return 'png';
+        case '.ico':
+            return 'ico';
+        default:
+            return 'text/html';
+    }
+}
+
+function showErrorPage (res){
+    const errorPath = path.join(__dirname, 'public', 'error.html');
+
+    fs.readFile(errorPath, 'utf-8', (error, data)=>{
+        if (error) {
+            res.writeHead(500);
+            res.end("Server error");
+        }
+        else {
+            res.writeHead(200);
+            res.end(data);
+        }  
+   })
+}
+
+function showContentPage(content, type, res){
+    res.writeHead(200, {
+        'Content-Type': type
+    })
+
+    res.end(content);
+}
+
+server.listen(PORT, ()=>{
+    console.log(`Server has been started on ${PORT}...`);
 });
